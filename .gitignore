@@ -1,0 +1,13 @@
+# 用户个人数据
+cache/
+output/
+
+# 用户修改后的配置文件
+config.json
+
+# PowerShell
+*.ps1xml
+
+# Windows
+Thumbs.db
+Desktop.ini
