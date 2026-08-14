@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Markdown生成模块
 .DESCRIPTION

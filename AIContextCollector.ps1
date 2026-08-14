@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     AI Context Collector - Main Entry
 .VERSION

@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     目录收集模块
 .DESCRIPTION
