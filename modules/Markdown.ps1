@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
     Markdown生成模块
 .DESCRIPTION
@@ -17,6 +17,8 @@ function Build-MarkdownContent {
         已确认的文件索引条目数组
     .PARAMETER ProjectName
         项目名称
+    .PARAMETER SourceLabel
+        内容来源说明（可选），例如 "目录 src/main/java/service (含子目录)"
     .OUTPUTS
         Markdown字符串
     #>
@@ -25,7 +27,10 @@ function Build-MarkdownContent {
         [array]$Files,
 
         [Parameter(Mandatory = $true)]
-        [string]$ProjectName
+        [string]$ProjectName,
+
+        [Parameter(Mandatory = $false)]
+        [string]$SourceLabel = ""
     )
 
     $sb = [System.Text.StringBuilder]::new()
@@ -35,6 +40,11 @@ function Build-MarkdownContent {
     [void]$sb.AppendLine("")
     [void]$sb.AppendLine("项目: $ProjectName")
     [void]$sb.AppendLine("")
+
+    if (-not [string]::IsNullOrWhiteSpace($SourceLabel)) {
+        [void]$sb.AppendLine("来源: $SourceLabel")
+        [void]$sb.AppendLine("")
+    }
     [void]$sb.AppendLine("生成时间: $(Get-Timestamp)")
     [void]$sb.AppendLine("")
     [void]$sb.AppendLine("文件数量: $($Files.Count)")

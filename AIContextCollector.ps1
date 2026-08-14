@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
     AI Context Collector - Main Entry
 .VERSION
@@ -21,6 +21,7 @@ $moduleFiles = @(
     "modules\Index.ps1",
     "modules\Search.ps1",
     "modules\Markdown.ps1",
+    "modules\Directory.ps1",
     "modules\Clipboard.ps1"
 )
 
@@ -162,19 +163,83 @@ function Invoke-PasteAndGenerate {
     Write-Host ""
     Write-Title "  解析文件名..."
 
-    $extractedFiles = Extract-FileNames -Content $gptContent
+    $extractedFiles = @(Extract-FileNames -Content $gptContent)
 
-    if ($extractedFiles.Count -eq 0) {
-        Write-Error2 "  未能从内容中提取到任何文件名"
+    # ---- 目录识别：内容中若包含目录，可整目录收录 ----
+    $dirCandidates = @(Extract-DirectoryPaths -Content $gptContent)
+    $resolvedDirs  = @()
+
+    if ($dirCandidates.Count -gt 0) {
+        $resolvedDirs = @(Resolve-DirectoryCandidates `
+            -Candidates $dirCandidates `
+            -Index      $script:CurrentIndex)
+    }
+
+    # 内容里只写了一个目录名（不带斜杠）时的兜底
+    if ($extractedFiles.Count -eq 0 -and $resolvedDirs.Count -eq 0) {
+
+        $singleLine = $gptContent.Trim()
+
+        if ($singleLine.Length -gt 0 -and $singleLine.Length -le 200 -and $singleLine -notmatch "`n") {
+            $dirResult = Search-DirectoryInIndex -SearchTerm $singleLine -Index $script:CurrentIndex
+            if ($dirResult.Matches.Count -eq 1 -and
+                -not [string]::IsNullOrWhiteSpace($dirResult.Matches[0])) {
+                $resolvedDirs = @($dirResult.Matches[0])
+            }
+        }
+    }
+
+    $dirFiles = @()
+
+    if ($resolvedDirs.Count -gt 0) {
+
+        Write-Host ""
+        Write-Success "  识别到 $($resolvedDirs.Count) 个目录:"
+
+        foreach ($d in $resolvedDirs) {
+            $cnt = @(Get-FilesInDirectory -Index $script:CurrentIndex -DirectoryPath $d -Recursive $true).Count
+            Write-ColorText -Text "    # " -Color "Magenta" -NoNewline
+            Write-Info "$d  ($cnt 个文件)"
+        }
+
+        Write-Host ""
+        $includeDirs = Read-Confirmation `
+            -Message "是否收录这些目录下的全部文件?" `
+            -DefaultYes $true
+
+        if ($includeDirs) {
+
+            $recursive = Read-Confirmation -Message "是否包含子目录?" -DefaultYes $true
+
+            $dirCollected = [System.Collections.ArrayList]::new()
+
+            foreach ($d in $resolvedDirs) {
+                $fs = @(Get-FilesInDirectory `
+                    -Index         $script:CurrentIndex `
+                    -DirectoryPath $d `
+                    -Recursive     $recursive)
+
+                foreach ($f in $fs) { [void]$dirCollected.Add($f) }
+            }
+
+            $dirFiles = @($dirCollected.ToArray())
+        }
+    }
+
+    if ($extractedFiles.Count -eq 0 -and $dirFiles.Count -eq 0) {
+        Write-Error2 "  未能从内容中提取到任何文件名或目录"
         return
     }
 
-    Write-Host ""
-    Write-Success "  提取到 $($extractedFiles.Count) 个文件名:"
+    if ($extractedFiles.Count -gt 0) {
 
-    foreach ($ef in $extractedFiles) {
-        Write-ColorText -Text "    * " -Color "Cyan" -NoNewline
-        Write-Info $ef
+        Write-Host ""
+        Write-Success "  提取到 $($extractedFiles.Count) 个文件名:"
+
+        foreach ($ef in $extractedFiles) {
+            Write-ColorText -Text "    * " -Color "Cyan" -NoNewline
+            Write-Info $ef
+        }
     }
 
     Write-Host ""
@@ -185,9 +250,16 @@ function Invoke-PasteAndGenerate {
     }
 
     # 搜索文件
-    $resolvedFiles = Search-FilesWithResolution `
-        -FileNames $extractedFiles `
-        -Index     $script:CurrentIndex
+    $searchedFiles = @()
+
+    if ($extractedFiles.Count -gt 0) {
+        $searchedFiles = @(Search-FilesWithResolution `
+            -FileNames $extractedFiles `
+            -Index     $script:CurrentIndex)
+    }
+
+    # 合并「目录收录」与「文件名搜索」的结果（按 fullPath 去重）
+    $resolvedFiles = @(Merge-FileLists -DirectoryFiles $dirFiles -SearchedFiles $searchedFiles)
 
     if ($resolvedFiles.Count -eq 0) {
         Write-Error2 "  没有找到任何匹配文件"
@@ -208,9 +280,15 @@ function Invoke-PasteAndGenerate {
     Write-Host ""
     Write-Title "  生成 Markdown..."
 
+    $sourceLabel = ""
+    if ($dirFiles.Count -gt 0) {
+        $sourceLabel = "目录 " + ($resolvedDirs -join ", ")
+    }
+
     $mdContent = Build-MarkdownContent `
         -Files       $resolvedFiles `
-        -ProjectName $script:CurrentIndex.projectName
+        -ProjectName $script:CurrentIndex.projectName `
+        -SourceLabel $sourceLabel
 
     $outFile = Save-MarkdownOutput `
         -Content   $mdContent `
@@ -234,7 +312,24 @@ function Invoke-PasteAndGenerate {
 }
 
 # ============================================================
-# 功能 3: 手动搜索
+# 功能 3: 按目录生成上下文
+# ============================================================
+
+function Invoke-DirectoryCollectMode {
+
+    if ($null -eq $script:CurrentIndex) {
+        Write-Error2 "  请先设置项目目录 (选项 1)"
+        return
+    }
+
+    Invoke-DirectoryCollect `
+        -Index          $script:CurrentIndex `
+        -OutputPath     $script:OutputPath `
+        -OutputFileName $script:Config.output.defaultFileName
+}
+
+# ============================================================
+# 功能 4: 手动搜索
 # ============================================================
 
 function Invoke-ManualSearchMode {
@@ -248,7 +343,7 @@ function Invoke-ManualSearchMode {
 }
 
 # ============================================================
-# 功能 4: 查看索引信息
+# 功能 5: 查看索引信息
 # ============================================================
 
 function Invoke-ShowIndex {
@@ -271,7 +366,7 @@ function Invoke-ShowIndex {
 }
 
 # ============================================================
-# 功能 5: 重建索引
+# 功能 6: 重建索引
 # ============================================================
 
 function Invoke-RebuildIndex {
@@ -348,14 +443,18 @@ function Start-MainLoop {
             }
 
             "3" {
-                Invoke-ManualSearchMode
+                Invoke-DirectoryCollectMode
             }
 
             "4" {
-                Invoke-ShowIndex
+                Invoke-ManualSearchMode
             }
 
             "5" {
+                Invoke-ShowIndex
+            }
+
+            "6" {
                 Invoke-RebuildIndex
             }
 

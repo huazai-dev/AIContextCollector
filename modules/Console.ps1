@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
     控制台UI模块
 #>
@@ -117,10 +117,12 @@ function Show-MainMenu {
     Write-ColorText -Text "  [2] " -Color "Cyan" -NoNewline
     Write-Info "粘贴 GPT 内容并生成上下文"
     Write-ColorText -Text "  [3] " -Color "Cyan" -NoNewline
-    Write-Info "手动搜索文件"
+    Write-Info "按目录生成上下文 (整个目录合并成一份文档)"
     Write-ColorText -Text "  [4] " -Color "Cyan" -NoNewline
-    Write-Info "查看当前索引信息"
+    Write-Info "手动搜索文件"
     Write-ColorText -Text "  [5] " -Color "Cyan" -NoNewline
+    Write-Info "查看当前索引信息"
+    Write-ColorText -Text "  [6] " -Color "Cyan" -NoNewline
     Write-Info "重建索引"
     Write-ColorText -Text "  [Q] " -Color "Red" -NoNewline
     Write-Info "退出"
