@@ -1,0 +1,13 @@
+{
+  "name": "seedance-shortdrama-studio",
+  "version": "1.0.0",
+  "private": true,
+  "description": "基于 Seedance 2.0 的 AI 短剧工作台：剧情主题 + 角色人设 + 分镜数量 + 视频风格，一键生成短剧成片",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT"
+}

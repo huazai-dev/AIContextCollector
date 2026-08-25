@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Seedance 短剧工作台 · AI 短剧一键生成</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>🎬</text></svg>" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">🎬</span>
+      <span class="brand-name">Seedance <b>短剧工作台</b></span>
+      <span class="brand-sub">Seedance 2.0 · AI Short Drama Studio</span>
+    </div>
+    <div class="topbar-right">
+      <span id="modeBadge" class="mode-badge">检测中…</span>
+      <nav class="tabs">
+        <button class="tab active" data-view="create">✍️ 创作台</button>
+        <button class="tab" data-view="library">🎞️ 成片库 <span id="libCount" class="lib-count"></span></button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <!-- ============ 创作台 ============ -->
+    <section id="view-create" class="view">
+      <div class="hero">
+        <h1>一句话主题，AI 帮你拍完一整部短剧</h1>
+        <p>填写剧情主题与角色人设 → 自动生成剧本与分镜脚本 → <b>Seedance 2.0</b> 逐镜生成视频 → 自动合成成片。</p>
+      </div>
+
+      <form id="createForm" class="panel form-panel" autocomplete="off">
+        <div class="form-grid">
+          <!-- 剧情主题 -->
+          <div class="field span-2">
+            <label class="field-label">📖 剧情主题 <em>必填</em></label>
+            <textarea id="fTheme" rows="3" maxlength="200" placeholder="例如：外卖小哥意外获得预知能力，在雨夜救下被追杀的千金，从此卷入豪门漩涡…"></textarea>
+            <div class="field-hint">写清楚「谁 + 遇到什么事 + 想要什么」，剧本会更精彩；也可只写关键词，如「重生逆袭」「悬疑凶案」「甜宠总裁」。</div>
+          </div>
+
+          <!-- 角色人设 -->
+          <div class="field span-2">
+            <div class="field-label-row">
+              <label class="field-label">🎭 角色人设 <em>至少 1 个</em></label>
+              <button type="button" id="btnAddChar" class="btn btn-ghost btn-sm">＋ 添加角色</button>
+            </div>
+            <div id="charList" class="char-list"></div>
+            <div class="field-hint">第 1 个角色为主角，第 2 个为对手 / 搭档；未填写的角色由 AI 编剧自动补全。</div>
+          </div>
+
+          <!-- 分镜数量 -->
+          <div class="field">
+            <label class="field-label">🎞️ 分镜数量</label>
+            <div class="slider-row">
+              <input type="range" id="fShots" min="2" max="10" step="1" value="6" />
+              <span class="slider-value"><b id="fShotsVal">6</b> 镜</span>
+            </div>
+            <div class="shot-quick">
+              <button type="button" class="chip" data-shots="4">4 镜 · 快剪</button>
+              <button type="button" class="chip" data-shots="6">6 镜 · 标准</button>
+              <button type="button" class="chip" data-shots="8">8 镜 · 丰满</button>
+              <button type="button" class="chip" data-shots="10">10 镜 · 大片</button>
+            </div>
+          </div>
+
+          <!-- 视频风格 -->
+          <div class="field">
+            <label class="field-label">🎨 视频风格</label>
+            <div id="styleList" class="style-list"></div>
+          </div>
+
+          <!-- 高级设置 -->
+          <div class="field span-2">
+            <details class="advanced">
+              <summary>⚙️ 高级设置</summary>
+              <div class="advanced-grid">
+                <div class="field">
+                  <label class="field-label">分辨率</label>
+                  <select id="fResolution">
+                    <option value="480p">480P 标清（快）</option>
+                    <option value="720p" selected>720P 高清（推荐）</option>
+                    <option value="1080p">1080P 全高清（慢）</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label class="field-label">画幅比例</label>
+                  <select id="fRatio">
+                    <option value="16:9" selected>16:9 横屏</option>
+                    <option value="9:16">9:16 竖屏（抖音/快手）</option>
+                    <option value="1:1">1:1 方形</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label class="field-label">每镜时长</label>
+                  <div class="slider-row">
+                    <input type="range" id="fDuration" min="4" max="8" step="1" value="5" />
+                    <span class="slider-value"><b id="fDurationVal">5</b> 秒</span>
+                  </div>
+                </div>
+                <div class="field">
+                  <label class="field-label">声音</label>
+                  <label class="check-row"><input type="checkbox" id="fAudio" checked /> 生成配音与音效（Seedance 自动对口型）</label>
+                </div>
+              </div>
+            </details>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" id="btnCreate" class="btn btn-primary btn-lg">🚀 开始生成短剧</button>
+          <div id="formNote" class="form-note"></div>
+        </div>
+      </form>
+    </section>
+
+    <!-- ============ 工作台（生成进度） ============ -->
+    <section id="view-workspace" class="view" hidden></section>
+
+    <!-- ============ 成片库 ============ -->
+    <section id="view-library" class="view" hidden>
+      <div class="lib-head">
+        <h1>🎞️ 成片库</h1>
+        <button id="btnNewProject" class="btn btn-primary">＋ 新建短剧项目</button>
+      </div>
+      <div id="libraryGrid" class="library-grid"></div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <span>Seedance 短剧工作台 · 演示项目</span>
+    <span id="footerMode"></span>
+  </footer>
+
+  <div id="toasts" class="toasts"></div>
+  <script src="/app.js"></script>
+</body>
+</html>
