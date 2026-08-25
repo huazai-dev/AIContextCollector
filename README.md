@@ -4,6 +4,22 @@
 
 ---
 
+## 🎬 新：Seedance 短剧工作台
+
+本仓库同时包含一个独立的 AI 短剧生成工具，位于 [`seedance-studio/`](seedance-studio/)：
+
+- 填写**剧情主题、角色人设、分镜数量、视频风格**，自动完成「剧本 → 分镜脚本 → 逐镜视频生成 → 成片合成」全流程
+- 基于**字节跳动 Seedance 2.0**（火山方舟 `doubao-seedance-2-0-260128`），配置 `ARK_API_KEY` 即走真实视频生成；未配置时使用本地演示引擎完整模拟
+- 实时展示生成进度（四阶段步骤条 + 逐镜进度 + 日志）与成片列表（播放/分镜片段/下载/单镜重生成）
+
+```bash
+cd seedance-studio && node server.js   # 打开 http://localhost:8787
+```
+
+详见 [seedance-studio/README.md](seedance-studio/README.md)。
+
+---
+
 ## 目录
 
 - [简介](#简介)

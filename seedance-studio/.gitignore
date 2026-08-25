@@ -1,0 +1,16 @@
+# 运行时数据（项目/成片）
+data/
+
+# 本地二进制与依赖（ffmpeg、Pillow、字体等，体积大不入库）
+vendor/
+
+# Python
+__pycache__/
+*.pyc
+
+# Node
+node_modules/
+
+# 系统文件
+.DS_Store
+Thumbs.db
